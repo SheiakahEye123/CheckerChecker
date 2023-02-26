@@ -1,43 +1,11 @@
 import cv2
 import numpy as np
 from matplotlib import pyplot as plt
+import random
+import math
 
 rgbimg = cv2.imread("checkers.png")
 cv2.cvtColor(rgbimg, cv2.COLOR_RGB2HSV)
-
-
-
-# def checkChecker(ll,lh, hl, hh, img) :
-#     low = cv2.inRange(img, ll, lh)
-#     high = cv2.inRange(img, hl, hh)
-#     kernel = np.ones((3,3),np.uint8)
-#     erodeimg = cv2.erode(cv2.bitwise_or(low, high), kernel)
-#     c, hier = cv2.findContours(erodeimg, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
-#     checkerlist = []
-#
-#     # zeroimg = np.zeros_like(img)
-#     # cv2.drawContours(zeroimg, c, -1, (0,0,255), 1)
-#
-#     for contours in c:
-#         if cv2.contourArea(contours) > 20:
-#             (x,y),radius = cv2.minEnclosingCircle(contours)
-#             center = (int(x),int(y))
-#             radius = int(radius)
-#             checkerlist.append((center, radius))
-#             # cv2.circle(zeroimg,center,radius,(0,255,0),1)
-#
-#     return checkerlist
-
-def checkChecker(scarimg):
-    adaptiveThresholdImg = cv2.adaptiveThreshold(scarimg, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C,cv2.THRESH_BINARY, 301, 2)
-
-    plt.figure(1)
-
-    plt.imshow(adaptiveThresholdImg)
-
-    plt.pause(0.00001)
-
-
 
 def findEdge(img):
     grayimg = img[:, :, 2]
@@ -56,15 +24,32 @@ def findEdge(img):
 
     return (final * 255 / final.max()).astype(np.uint8)
 
-checkChecker(findEdge(rgbimg))
+def findCheckers(vchann, edgeimg):
+    # kernel = (3,3)
+    # dilateimg = cv2.dilate(edgeimg, kernel, iterations=2)
+    thresh = cv2.adaptiveThreshold(edgeimg, 255, cv2.ADAPTIVE_THRESH_MEAN_C, cv2.THRESH_BINARY, 31, -25)
+    # erodeimg = cv2.erode(thresh, kernel)
+    plt.figure(0)
+    plt.imshow(thresh)
+    plt.pause(0.001)
+    # circles = cv2.HoughCircles(thresh, cv2.HOUGH_GRADIENT, 1, 50, param1=10, param2=2, minRadius=0, maxRadius=15)
+    # circles = np.uint16(np.around(circles))
+    # for i in circles[0, :]:
+    #     cv2.circle(vchann, (i[0], i[1]), i[2], 0, 2)
 
-# redcs = checkChecker(rgbimg)
-# blackcs = checkChecker(rgbimg)
-#
-# for r in redcs:
-#     cv2.circle(rgbimg, r[0], r[1], (0, 255, 0), 2)
-#
-# for b in blackcs:
-#     cv2.circle(rgbimg, b[0], b[1], (255, 0, 255), 2)
+    c, hier = cv2.findContours(thresh, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
 
+    for i in range(len(c)):
+        p2 = math.pow(cv2.arcLength(c[i], True),2)
+        a = cv2.contourArea(c[i])
+        if a > 20 and 0.9 <= (p2/a)/(4 * 3.14) <= 1.2:
+            cv2.drawContours(rgbimg, c, i, (random.randint(0,255),random.randint(0,255),random.randint(0,255)), 2)
+
+    plt.figure(1)
+    plt.imshow(rgbimg)
+    plt.pause(0.1)
+
+
+edges = findEdge(rgbimg)
+findCheckers(rgbimg[:,:,2].astype(np.uint8), edges)
 plt.show()
